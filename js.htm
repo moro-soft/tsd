@@ -1,0 +1,441 @@
+<script language="JavaScript">
+<!-- if (typeof variable === 'undefined' || variable === null) const variable = 1;	-->
+host	= '<?php echo $Home; ?>' 
+data	= document.getElementById('data')
+list1	= document.getElementById('list1')
+list0	= document.getElementById('list0')
+list0x= document.getElementById('list0x')
+date	= document.getElementById('date')
+user	= document.getElementById('user')
+userX	= document.getElementById('userX')
+nomer	= document.getElementById('nomer')
+nomerX= document.getElementById('nomerX')
+cell	= document.getElementById('cell')
+say	= document.getElementById('say')
+f1	= document.getElementById('f1')
+f4	= document.getElementById('f4')
+f6	= document.getElementById('f6')
+f7	= document.getElementById('f7')
+f8	= document.getElementById('f8')
+f9	= document.getElementById('f9')
+f10	= document.getElementById('f10')
+facts	= document.getElementsByName("fact")
+confirmDial = window.confirmDial
+confirmYes = window.confirmYes
+confirmNo = window.confirmNo
+
+
+document.body.onkeydown = function(e){
+	switch (e.keyCode) {
+		case 112: f1.click(); break;
+		case 114: f3.click(); break;
+		case 115: f4.click(); break;
+		case 117: f6.click(); break;
+		case 118: f7.click(); break;
+		case 119: f8.click(); break;
+		case 120: f9.click(); break;
+		case 121: f10.click(); break;
+		default: 
+			//return true;
+	}
+	//return false;
+}
+
+confirmYes.onClick = function(){return false} 
+
+Dialog = 0//Checked(document.getElementsByName("dialogOn"))
+saveLocalBatsOnSrv() // проверим локальные сохранения пакетов 
+
+<?php if ($f[1]==="") {	?>
+	if (list1.value === '' && localStorage.getItem('list1') != null && ! (say.textContent.substr(0,4) === 'Сохр') ) list1.value = localStorage.getItem('list1'); //вернем пакет из клиента
+	if (list0.value === '' && localStorage.getItem('list0') != null ) list0.value = localStorage.getItem('list0'); //вернем пакет из клиента
+	else localStorage.setItem('list0',list0.value); //сохраним пакет на клиенте
+<?php }	?>
+	if (localStorage.getItem('cell') === null) localStorage.setItem('cell',cell.options.selectedIndex); //сохраним МХ на клиенте
+		else cell.options.selectedIndex = localStorage.getItem('cell'); 
+	if (localStorage.getItem('date') === null) localStorage.setItem('date',date.value); //сохраним дату на клиенте
+		else date.value = localStorage.getItem('date'); //вернем дату из клиента
+	if (localStorage.getItem('user') === null) localStorage.setItem('user',user.value); //сохраним ФИО на клиенте
+		else if (localStorage.getItem('user') != '') user.value = localStorage.getItem('user'); //вернем ФИО из клиента
+	if (localStorage.getItem('nomer') === null) localStorage.setItem('nomer',nomer.value); //сохраним ФИО на клиенте
+		else if (localStorage.getItem('nomer') != '') nomer.value = localStorage.getItem('nomer'); //вернем ФИО из клиента
+	//переопределим событие "по изменению"
+	date.onchange	= function(){localStorage.setItem('date'	,date.value);} 
+<?php if ($super===false) {	?>
+	date.oninput	=	function(){ //переопределим событие по вводу даты 
+		var today = new Date();
+		var dateday = new Date(date.value);
+		say.textContent = '';
+		if (dateday.getTime() + 20 * 1000 * 60 * 60 * 24 < today.getTime()) { // не старше 20 дней
+			<?php echo "date.value = '".date("Y-m-d")."';"; ?>
+			say.textContent = 'Слишком старая дата! Архив в режиме супер!';
+		}
+	}
+<?php }	?>
+	user.onchange	= function(){
+		user.value = user.value.trim()	
+		localStorage.setItem('user'	, user.value)
+		display_x()
+	} 
+	nomer.onchange	= function(){
+		nomer.value= nomer.value.trim();
+		localStorage.setItem('nomer',nomer.value);
+		display_x()
+	} 
+	cell.onchange	= function(){localStorage.setItem('cell'	,cell.options.selectedIndex);} 
+	list0.oninput	= function(){
+		localStorage.setItem('list0'	,list0.value)
+	}
+	
+	list1.onchange	= function(){localStorage.setItem('list1'	,list1.value);}
+	list1.oninput	= function(){ //переопределим событие по вводу данных
+	// проверка на ШК весовой 18 зн.
+	var last = list1.value.substr(-19).substr(0,18); 
+	p1 = last.replace(/\n/g,',').replace(/\r/g,',').indexOf(','); // найти перенос строки
+	if (last.length == 18 && p1==-1) {
+		alarmAudio();	
+		confirmDialog('Выберите другой ШК на этикетке, '+last+' неверный?','неверный ШК')
+		return false;
+	}
+	if (list0.value.length > 0) { //проверка наличия в учете
+		last = clear_listF(list1.value.substr(-15)); //в последние строки шк=14+разд.
+		p1 = last.indexOf(","); // от нач. разд.
+		if (p1 >= 0 && p1 < 8 ) last = last.substr(p1+1); //если позиция , от 0 до 10 отрежем после ,
+		p1 = last.indexOf(","); // до кон. разд.
+		if (p1 > 9) last = last.substr(0,p1); // отрежем до ,
+		var l0 = clear_listF(list0.value);
+		if (last.length > 7 && l0) {
+			var p0 = l0.indexOf(last); //первый разделитель
+			if (p0 == -1)	last+= " - нет в учете?";
+			else			last = "Есть в учете: "+l0.substr(p0,l0.indexOf(',',p0)-p0); // что найдено до сл. ,
+			say.textContent = ' '+last+'!'; 
+			list1.onchange();
+		} 
+	}
+	else last+=" сканируйте!";
+}
+
+function alarmAudio(){	// звуковое оповещение
+	var context = new (window.AudioContext || window.webkitAudioContext)();
+	var osc = context.createOscillator();	// создаем генератор звука
+	osc.type = 'sawtooth';					// альтернативы: square, sawtooth,triangle
+	osc.frequency.value = 440; 				// Hz
+	osc.connect(context.destination);		// связываем его с назначением
+	osc.start();							// запуск
+	osc.stop(context.currentTime + 1);      // стоп через мгновение
+}
+
+function clear_listF(p1){
+	var p=p1.replace(/ /g,'');	// без пробелов
+	p=p.replace(/^0/g,'');		// начальный 0
+	p=p.replace(/^0/g,'');		// начальный 00
+	p=p.replace(/,/g,'.');		// десятчные 
+	p=p.replace(/\r\n/g,',');	// переносы
+	p=p.replace(/\n/g,',');
+	p=p.replace(/\r/g,',')
+	p+=','; 					// что бы одинаково разделитель по краям
+	p=p.replace(/,,/g,',');		// пустые четн
+	p=p.replace(/,,/g,',');		// пустые нечет
+	p=p.replace(/0000,/g,',');	// конец ШК
+return p;
+}
+function checkF(){
+	var e='';
+	var el1=clear_listF(list1.value);
+	var el0=clear_listF(list0.value);
+	p2 = 0;
+
+	reg = new RegExp('[	]+[^\,]+\,');	// удалим лишнее кроме первой колонки с ШК	
+	el0=el0.split(reg).join(','); 
+	el1=el1.split(reg).join(','); 
+
+	p1 = el1.indexOf(',');				// первый разделитель
+	while (p1 > 0 && p2<5000 ) { 
+		r1 = el1.substr(0,p1);			// вырезаем номер,
+		if ( el0.indexOf(r1) ==-1 ) {	// нет такого -
+			e += r1+"+\r\n";			// излишек!
+		} else {	
+			el0=el0.split(r1+',').join(''); // удалим в учете 
+		}
+		el1=el1.split(r1+',').join('');		// удалим в факте 
+		p1 = el1.indexOf(',');				// следующий разделитель
+		p2+=1;
+	}	
+	p0 = el0.indexOf(',');							//первый разделитель
+	if (p0 > 0 ) e += el0.replace(/,/g,"-\r\n");	// недостаток!
+	if (p2 >= 5000) e = 'слишком много >'+p2+' ШК?';
+	else {
+		if (e === '') e+='сверено:'+p2+' совпало!'+el0;
+		else {
+			list0.value=e; 
+			e='сверено:'+p2+' излишек+ недостача-';
+		}
+	}
+	say.textContent=e;
+}
+function downloadF(f){
+	downloadFile(''+date.value+'_'+cell.value+'_inv.csv',"N\r\n"+list1.value+"\r\n"+list0.value)
+}
+function downloadFile(file,text){
+	var element = document.createElement('a');
+	element.setAttribute('href','data:text/csv;charset=utf-8, '+encodeURIComponent(text.replace(/[	]+/g,';')));
+	element.setAttribute('download',''+date.value+'_'+cell.value+'_inv.csv');
+	document.body.appendChild(element);
+	element.click();
+	document.body.removeChild(element);
+}
+function loadF(r){
+	if (confirm('Получить данные из МХ '+r+'?')) {
+		cell.value=r; 
+		cell.onchange(); 
+		return true; 
+	} else {
+		return false; 
+	}
+}
+function len(list){ //длина строки 
+	return list.value.replace(/\r\n /g,'').length
+}
+function empty(list1){
+	//alert(len(list1))
+	if (len(list1) > 0 ) {
+		return false;
+	}
+	return true; 
+}
+
+function Checked(element_radio){
+	for (var i = 0; i < element_radio.length; i++) {
+		if (element_radio[i].checked) return element_radio[i].value;
+	}
+	return 0;
+}
+
+function factChecked(){
+	return Checked(facts);
+}
+
+function saveBatLocal() { 											// сохранение локальных
+	const bats = JSON.parse(localStorage.getItem('bats')) || [];	// Пытаемся получить список локальных пакетов данных, если его нет, используем пустой массив.
+	const bat = {													// Добавляем пакет данных
+		'cell':cell.options[cell.options.selectedIndex].text,
+		'date':date.value,
+		'fact':factChecked(),
+		'id':nomer.value,
+		'user':user.value,
+		'list1':list1.value
+	};	
+	bats.push(bat);													// в стек
+	localStorage.setItem('bats', JSON.stringify(bats));				// Сохраняем обновленный список пакетов в стек
+	list0.value = ''+cell.options[cell.options.selectedIndex].text +' №'+ nomer.value + ": +" + list1.value.split('\n').filter(Boolean).length + "\r\n"+list0.value;	// добавим в правый список
+	list1.value = ''												// чистим список
+	say.value = 'подготовлено для отправки...';
+	return true;
+}
+
+function saveLocalBatsOnSrv() { 						// сохранение локальных данных на сервер
+	const bats = JSON.parse(localStorage.getItem('bats')) || false;	// Пытаемся получить список локальных пакетов данных, если его нет, используем пустой массив.
+	if (bats) {											// если есть что сохраняем	
+		fetch(host.replace('?super','')+'?com=Сохранить&bats='+JSON.stringify(bats))		// асинхроно отправляем сохр.список пакетов
+			.then(response => response.text())
+			.then(result => {
+				if (result.includes('хран')) {			// удачно!
+					say.textContent = result
+					localStorage.removeItem('bats')		// чистим удачно сохранённые данные
+				} else									// не удачно!
+					say.textContent = 'Ошибка сохранения в сети, повторите!'+result 
+			}
+		)
+		.catch(	function(error) {						// нет ответа сервера	
+			say.textContent = 'Данные сохранены в ТСД!'
+		});
+	}
+}
+
+function confirmSave(question){
+	if (len(list1)>0) 
+		confirm('Сохранить данные?','Сохранить')
+	else
+		alert('Cписок пуст!')
+}
+
+function confirmF(question,com){
+	return ( empty(list1) && confirmDialog(question) ); 
+}
+
+function confirmE(question,com){
+	saveLocalBatsOnSrv() // проверим локальные сохранения пакетов 
+	if( factChecked()!=1 || empty(list1) ) return (  confirmDialog(question,com) ); 
+	alert('Сохраните или очистите левый список, если факт!');
+	return false;
+}
+
+function loadPostFromSrv() { // получение данных от сервера
+	const form ='com=Получить&JSON=1'
+	+'&fact='	+factChecked()
+	+'&cell='	+cell.options[cell.options.selectedIndex].text
+	+'&date='	+date.value
+	+'&id='		+nomer.value
+	+'&use='	+user.value
+			
+	fetch(host,	// Добавляем пакет данных
+		{
+		method: 'POST',
+		headers: {"Content-type": "application/x-www-form-urlencoded; charset=UTF-8"},
+		body: form		
+		}
+	)		// асинхроно получеам данные
+	.then(response => response.text())//	.then((response) => {	return response.json()	})  
+	.then(result => {
+		var alist = JSON.parse(result)
+		list0.value = alist['list']	// выбрать список
+		say.textContent = 'Получено:'+ alist['units']+ 'ШК из '+ alist['cell']
+		display_x()
+	})
+	.catch(	function(error) {						// нет ответа сервера	
+		say.textContent = ''+form+' Нет связи: '+error
+	})
+	return false
+}
+
+function confirmAnswer() {
+	if (!Dialog) confirmDial.style.display = 'none'
+	if (window.confirmYes.Value)
+		switch (window.confirmYes.Value) {
+			case 'Сохранить': 
+				saveBatLocal()			// сохраняем локально
+				saveLocalBatsOnSrv()	// сохраняем локальное на сервер
+				break;
+			case 'Получить': 
+				if (factChecked()!=0 && !empty(list1))	saveBatLocal()	// сохраняем локально
+				saveLocalBatsOnSrv() // проверим локальные сохранения пакетов 
+				loadPostFromSrv()
+				break;
+			case 'Очистить левый': 
+				localStorage.setItem("list1","");	
+				list1.value="";
+				say.textContent='';
+				break;
+			case 'Очистить правый': 
+				localStorage.setItem("list0","");	
+				list0.value="";
+				say.textContent='';
+				list0x.style.display = 'none'	//(list0.value.length == 0) ? 'contents' :
+				break;
+			case 'Вправо': 
+				list0.value=list1.value;
+				list1.value="";
+				display_x()
+				say.textContent='Скопировао в Учет...';
+				break;
+			case 'Влево': 
+				if (factChecked()!=0 && !empty(list1))	saveBatLocal()	// сохраняем локально
+				saveLocalBatsOnSrv() // проверим локальные сохранения пакетов 		
+				list1.value=list0.value;
+				say.textContent='Заменено из Учет...';
+				break;
+			case 'Сравнить': 
+				checkF();
+				break;
+			case 'Вернуть списки': 
+				list1.value = localStorage.getItem('list1');
+				list0.value = localStorage.getItem('list0');
+				break;
+			case 'Очистить Номер': 
+				localStorage.setItem("nomer","");
+				nomer.value="";
+				break;
+			case 'Очистить ФИО': 
+				localStorage.setItem("user","");
+				user.value="";
+				break;
+			case 'неверный ШК':
+				list1.value = list1.value.substr(0,list1.value.length-19);
+				break;
+			case 'да': 
+				say.textContent='да';
+				return true;
+			case 'нет': 
+				say.textContent='нет';
+				break;
+			default: // получение ответа от сервера
+				const bodytext = 'com='+window.confirmYes.Value+'&JSON=1'	+'&cell='+cell.options[cell.options.selectedIndex].text
+						+'&date='+date.value	+'&fact='+factChecked()	+'&id='+nomer.value	+'&user='+user.value+''	
+						+'&list1='+list1.value	+'&list0='+list0.value
+				say.textContent = window.confirmYes.Value+': Ждите...'
+				fetch( host,	// Добавляем пакет данных
+					{
+					method: 'POST',
+					headers: {"Content-type": "application/x-www-form-urlencoded; charset=UTF-8"},
+					body: bodytext
+					}
+				)	// асинхроно получеам данные
+				.then(response => response.text())
+				.then(result => {
+					switch (window.confirmYes.Value) {
+					case 'Выгрузить': 
+						downloadFile(''+date.value+'_all_inv.csv',result)
+						say.textContent = 'выгружено...'
+						break;
+					case 'Сверка' :
+						var alist = JSON.parse(result)
+						list0.value = alist['list']	// выбрать список
+						say.innerHTML = alist['say']
+						break;
+					default:
+						let poz = result.indexOf("<!DOCTYPE html>")
+						if (poz>1) {
+							say.textContent = 'получено! '//+bodytext
+							var W = window.open("", "Ответ", "top=55; width=300");
+							W.document.write(result);
+							//data.innerHTML = ( result.slice(poz, - poz + result.indexOf("<a name=nj")) )
+						} else
+							say.textContent = '['+result+']'
+					}
+				})
+				.catch(	function(error) {						// нет ответа сервера	
+					say.textContent = 'Нет связи: '+error
+				});
+		}
+	return false;
+}
+function confirmCansel(){
+	if (!Dialog) confirmDial.style.display = 'none'
+	say.innerHTML = '<b>Нет</b>, так нет...' 
+	return 0 
+}
+function alertDialog(mess){
+	window.alertMess.innerText = mess
+	window.alertDial.showModal()
+}
+
+function confirmDialog(mess,val='да'){
+	window.confirmMess.textContent = mess;
+	window.confirmYes.Value = val;
+	if (Dialog)
+		window.confirmDial.showModal();
+	else {
+		confirmDial.style.display = 'contents'
+		confirmYes.onclick = confirmAnswer
+		confirmNo.onclick =  confirmCansel 
+		say.innerHTML = '<b>Подтвердите:</b>' 
+	}	
+	return false;
+}
+window.alert = function(mess){ 
+	if (Dialog)
+		alertDialog(mess)
+	else
+		say.textContent = '('+mess+')'
+}
+window.confirm = function(mess,val){ 
+	confirmDialog(mess,val)
+}
+function display_x(){	// видимость кнопки удаления
+	list0x.style.display	= (list0.value.length)	? 'inline' : 'none'	
+	nomerX.style.display	= (nomer.value.length)	? 'inline' : 'none'	
+	userX.style.display		= (user.value.length)	? 'inline' : 'none'	
+}
+display_x()
+-->
+</script>

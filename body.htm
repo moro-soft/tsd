@@ -1,0 +1,55 @@
+<body>
+<div id='content'>
+<a name='start' > </a>
+<div id='say' >
+	<?php echo $say ?>
+</div>
+<dialog id='alertDial'  onclick='window.alertDial.close()'>
+	<form method='dialog' >
+		<b id='alertMess'>Внимание!</b>	
+		<button>Понятно</button>
+	</form>
+</dialog>
+<dialog id='confirmDial' onclose='confirmAnswer(event)' >
+	<form method='dialog' id='formadialog' action='confirmAnswer(event)' >
+		<b id='confirmMess'>Подтверждаете?</b>	
+		<button name='да'	value='да'	id='confirmYes'	>Да</button>
+		<button name='нет'	value='нет'	id='confirmNo'	>Нет</button>
+	</form>
+</dialog>
+<form action='<?php echo $Home ?>' name='send' method='post' enctype='multipart/form-data' >
+<?php echo $echo_top_form;?>
+<a name=nj ></a>
+<?php echo $echo_param;?>
+<div id='butt'>
+	<button id='f4' type='button' name='com' value='Сохранить'	onClick='return confirmSave("Отравить данные в хранилище?")' class='main'>F4 Сохранить</button><?php echo $f[4]?>
+	<button id='f6' type='button' name='com' value='Получить'	onClick='return confirmDialog("Получить данные?","Получить")'			>F6 Получить</button><?php echo $f[10]?>
+	<button id='f7' type='button' name='com' value='Где'		onClick='return confirmDialog("Найти последний ШК его МХ по учету?","Где")' >F7 Где</button><?php echo $f[5]?>
+	<button id='f1' type='submit' name='com' value='Справка' >F1 Справка</button> <?php echo $f[1] ?>
+</div>
+
+<?php  
+if ($super!=false) {  
+?>
+<div>
+	<hr>
+	<button id='f8'	type='submit' name='com' value='Сверка' onClick='return confirmE("Сверить данные хранилища факт с учетом по параметрам?","Сверка")' >Сверка F8</button><?php $f[12] ?>
+	<button id='f7'	type='submit' name='com' value='Поиск'	onClick='return confirmDialog(" Найти для списка ШК, где МХ по факту и учету?","Поиск");'	>🔍Поиск F3</button><?php $f[5] ?>
+	<button id='f99' type='button' onClick='return downloadF(1);' >💾</button> 
+	<button id='f9'	type='submit' name='com' value='Скачать' onClick='return confirmDialog("Скачать списки?","Скачать")'	>F9</button><?php  $f[13] ?>
+	<button id='f10' type='submit' name='com' value='Печать' onClick='return confirmDialog("Печать ведомости?","Печать")'	>🖨F10</button><?php  $f[15] ?>
+	<button			type='submit' name='com' value='Карта'	onClick='return confirmE("Получить объёмы по МХ?","Карта")'		>Карта🏠</button><?php  $f[11] ?>
+	<hr>
+	Импорт из SAP <label><input type='checkbox' name='replace' title='Загрузить с заменой старых данных?' value="1" /> с заменой старых данных</label>
+	<input id='file' type='file' name='filename' />
+	<button id='f11' type='submit' name='com' value='Загрузить' title='Загрузить все остатки из Эксель?' />Загрузить</button><?php $f[16] ?>
+	<hr>
+	Экспорт все МХ на дату по типу в Эксель 
+	<button id='f12' type='button' name='com' value='Выгрузить'	onClick='confirmDialog("Выгрузить?","Выгрузить")' />Выгрузить</button>
+</div>
+<?php 
+}
+?>
+<span><img class="left" src="/logo_sg.png" width="40px">Сегежский ЦБК - Служба ИТ <br></span>
+</form>
+</div>
